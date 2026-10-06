@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cnet Manager Hub | Vertage</title>
+  <meta name="description" content="Your Vertage guide to Cnet. Step-by-step help with orders, candidates, interviews and timesheet approvals, with Cnet access for Ireland and the UK.">
+  <meta name="theme-color" content="#063b40">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+    <a class="brand" href="#home" aria-label="Vertage Manager Hub home"><img src="assets/vertage-logo.svg" alt="Vertage"><span>CNET MANAGER HUB</span></a>
+    <button class="mobile-close" id="close-menu" aria-label="Close menu">×</button>
+    <p class="nav-label">YOUR WORKSPACE</p>
+    <nav id="nav"></nav>
+    <div class="sidebar-bottom"><div class="help-dot">?</div><strong>A little help, a lot of confidence.</strong><p>Guidance for every step in Cnet.</p><a href="#support">Contact support <span aria-hidden="true">↗</span></a></div>
+    <a class="brand-site" href="https://www.vertage.com/" target="_blank" rel="noopener noreferrer">Visit vertage.com ↗</a>
+  </aside>
+  <div class="mobile-shade" id="mobile-shade"></div>
+  <div class="workspace">
+    <header class="topbar">
+      <div class="topbar-label"><button id="menu-button" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">☰</button><span>Client manager resources</span></div>
+      <div class="header-actions"><button class="install-button" id="install-button" hidden>Install app</button><span class="access-label">Open Cnet</span><a href="https://ie.comensura.net/CNET5/" target="_blank" rel="noopener noreferrer">Ireland ↗</a><a href="https://uk.comensura.net/CNET5/" target="_blank" rel="noopener noreferrer">UK ↗</a></div>
+    </header>
+    <main id="content" tabindex="-1"></main>
+    <footer><span>Vertage · Cnet Manager Hub</span><span>Guide edition · October 2026</span><a href="#support">Support & access</a></footer>
+  </div>
+  <div id="toast" class="toast" role="status"></div>
+  <dialog id="image-dialog" aria-label="Cnet reference screenshot"><button id="close-image" aria-label="Close screenshot">×</button><img id="dialog-image" alt=""><p>Reference screen from the supplied Cnet5 guide. Layouts and options may vary.</p></dialog>
+</body>
+</html>
