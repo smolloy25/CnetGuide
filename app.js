@@ -28,9 +28,6 @@ let page = 'home';
 let deferredInstall;
 let toastTimer;
 let vidyardLoad;
-document.addEventListener('securitypolicyviolation',event=>{
-  if(event.blockedURI.includes('vidyard')) console.error('Vidyard resource blocked:',event.violatedDirective,new URL(event.blockedURI).origin);
-});
 
 function toast(message) {
   const node = document.querySelector('#toast'); node.textContent = message; node.classList.add('visible');
@@ -95,7 +92,7 @@ function disposeVideoPlayers() {
 function renderVideos({category: topic, guideId, query: videoQuery = ''} = {}) {
   const videos = findVideos({category: topic, guideId, query: videoQuery});
   if (!videos.length) return videoQuery ? '<p class="video-empty" role="status">No video guides match this search.</p>' : '';
-  return `<section class="help-videos" aria-label="Cnet video guides"><div class="video-section-heading"><h2>${guideId?'Videos for this process':'Video guides'}</h2><span>${videos.length} ${videos.length===1?'video':'videos'}</span></div><p class="section-description">Select a video to watch it here. An internet connection is required.</p><div class="video-grid">${videos.map(video=>`<details class="help-video" data-video-uuid="${e(video.uuid)}"><summary><span class="video-play-icon" aria-hidden="true">▶</span><span>${e(video.title)}</span></summary><div class="video-content"><div class="video-player" role="region" aria-label="${e(video.title)}"><p class="video-load">Select the heading to load this video.</p></div><a class="video-watch-link" href="${e(video.watchUrl)}" target="_blank" rel="noopener noreferrer">Open video in a new tab ↗</a></div></details>`).join('')}</div></section>`;
+  return `<section class="help-videos" aria-label="Cnet video guides"><div class="video-section-heading"><h2>${guideId?'Videos for this process':'Video guides'}</h2><span>${videos.length} ${videos.length===1?'video':'videos'}</span></div><p class="section-description">Select a video to open the player. If Vidyard restricts playback here, choose “Watch on Vidyard” to watch it in a new tab.</p><div class="video-grid">${videos.map(video=>`<details class="help-video" data-video-uuid="${e(video.uuid)}"><summary><span class="video-play-icon" aria-hidden="true">▶</span><span>${e(video.title)}</span></summary><div class="video-content"><div class="video-player" role="region" aria-label="${e(video.title)}"><p class="video-load">Select the heading to load this video.</p></div><a class="video-watch-link" href="${e(video.watchUrl)}" target="_blank" rel="noopener noreferrer">Watch on Vidyard ↗</a></div></details>`).join('')}</div></section>`;
 }
 function videoArea() {
   if (page === 'saved') return '';
