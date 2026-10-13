@@ -1,5 +1,5 @@
-const CACHE='vertage-cnet-v8';
-const SHELL=['./','./index.html','./app.js','./guide-data.js','./guide-utils.js','./video-data.js','./styles.css','./manifest.webmanifest','./assets/vidyard-embed.js','./assets/vertage-logo.svg','./assets/hero-vertage.webp','./assets/hero-vertage.webm','./assets/hero-vertage.mp4','./assets/icon.svg','./assets/icon-192.png','./assets/icon-512.png',...['01','02','03a','03b','04','05','06','07','08','09','10','11'].map(id=>`./assets/process-${id}.webp`)];
+const CACHE='vertage-cnet-v9';
+const SHELL=['./','./index.html','./app.js','./guide-data.js','./guide-utils.js','./video-data.js','./styles.css','./manifest.webmanifest','./assets/vertage-logo.svg','./assets/hero-vertage.webp','./assets/hero-vertage.webm','./assets/hero-vertage.mp4','./assets/icon.svg','./assets/icon-192.png','./assets/icon-512.png',...['01','02','03a','03b','04','05','06','07','08','09','10','11'].map(id=>`./assets/process-${id}.webp`)];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL))));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('vertage-cnet-')&&k!==CACHE).map(k=>caches.delete(k))))));
 self.addEventListener('fetch',event=>{
