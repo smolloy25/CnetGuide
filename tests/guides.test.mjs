@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, access } from 'node:fs/promises';
 import { guides } from '../guide-data.js';
+import { helpVideos, findVideos } from '../video-data.js';
 import { searchGuides, validProgress, readStored, escapeHtml } from '../guide-utils.js';
 
 test('all supplied workflows are complete and reference available assets',async()=>{
@@ -27,7 +28,27 @@ test('persisted state rejects malformed and obsolete values',()=>{
 });
 test('support links are correct and app chrome has no client branding',async()=>{
   const app=await readFile(new URL('../app.js',import.meta.url),'utf8');const html=await readFile(new URL('../index.html',import.meta.url),'utf8');
-  for(const url of ['https://ie.comensura.net/CNET5/','https://uk.comensura.net/CNET5/']){assert.ok(app.includes(url));assert.ok(html.includes(url));}
-  assert.ok(app.includes('support@comensura.co.uk'));assert.ok(!/veolia/i.test(app+html));assert.ok(!/General enquiries: Contact Vertage/.test(app));
+  for(const url of ['https://ie.comensura.net/CNET5/Account/SSOLogin/VeoliaIreland','https://uk.comensura.net/CNET5/Account/SSOLogin/Veolia']){assert.ok(app.includes(url));assert.ok(html.includes(url));}
+  assert.ok(app.includes('support@comensura.co.uk'));assert.ok(!/veolia/i.test((app+html).replace(/https:\/\/[^\s"'<>]+/g,'')));assert.ok(!/General enquiries: Contact Vertage/.test(app));
   assert.equal(escapeHtml('<img onerror="x">'), '&lt;img onerror=&quot;x&quot;&gt;');
+});
+
+test('all supplied videos are mapped to appropriate topics and viewer embeds',()=>{
+  assert.equal(helpVideos.length,23);
+  assert.equal(new Set(helpVideos.map(v=>v.uuid)).size,23);
+  assert.equal(findVideos({category:'Bookings'}).length,7);
+  assert.equal(findVideos({category:'Candidates'}).length,6);
+  assert.equal(findVideos({category:'Orders'}).length,5);
+  assert.equal(findVideos({category:'Timesheets'}).length,3);
+  assert.equal(findVideos({category:'Account'}).length,2);
+  for(const v of helpVideos){
+    assert.equal(new URL(v.embedUrl).origin,'https://play.vidyard.com');
+    assert.equal(new URL(v.embedUrl).pathname,'/'+v.uuid);assert.equal(new URL(v.embedUrl).searchParams.get('type'),'inline');
+    assert.ok(v.watchUrl.endsWith(v.uuid));
+    assert.ok(!v.embedUrl.includes('edit='));
+    for(const id of v.guides)assert.ok(guides.some(g=>g.id===id));
+  }
+  assert.ok(findVideos({guideId:'process-07'}).some(v=>v.title==='Requesting an interview'));
+  assert.equal(findVideos({category:'Bookings',query:'IR35'})[0].uuid,'DB5UVEvefE7o9uyxR8rKBZ');
+  assert.ok(findVideos({guideId:'process-11'}).some(v=>v.title==='How to delegate'));
 });
