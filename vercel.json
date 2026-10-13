@@ -22,7 +22,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-src https://play.vidyard.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+          "value": "default-src 'self'; script-src 'self' https://play.vidyard.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://play.vidyard.com https://cdn.vidyard.com https://assets.vidyard.com; connect-src 'self' https://play.vidyard.com; frame-src https://play.vidyard.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
         }
       ]
     },

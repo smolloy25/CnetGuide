@@ -27,6 +27,7 @@ let category = 'All';
 let page = 'home';
 let deferredInstall;
 let toastTimer;
+let vidyardLoad;
 
 function toast(message) {
   const node = document.querySelector('#toast'); node.textContent = message; node.classList.add('visible');
@@ -52,10 +53,33 @@ function collection() {
   const info = query ? `${results.length} ${results.length===1?'guide':'guides'} matching “${query}”` : `${results.length} ${results.length===1?'guide':'guides'}${category==='All'?'':' in '+category.toLowerCase()}`;
   return `<p class="count-label" role="status">${e(info)}</p><div class="cards">${results.length ? results.map(card).join('') : `<div class="empty">${icon(page==='saved'?'saved':'search')}<h3>${page==='saved'&&!query?'Keep your useful guides close.':'No guides found.'}</h3><p>${page==='saved'&&!query?'Select the bookmark on any guide to save it here.':'Try a shorter search or choose another topic.'}</p><button id="reset-filter">${page==='saved'&&!query?'Browse all guides':'Clear filters'}</button></div>`}</div>${videoArea()}`;
 }
+function loadVidyard() {
+  if (window.VidyardV4?.api) return Promise.resolve(window.VidyardV4);
+  if (!vidyardLoad) {
+    vidyardLoad = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://play.vidyard.com/embed/v4.js';
+      script.async = true;
+      script.onload = () => window.VidyardV4?.api ? resolve(window.VidyardV4) : reject(new Error('Video player unavailable'));
+      script.onerror = () => reject(new Error('Video player could not be loaded'));
+      document.head.append(script);
+    }).catch(error => { vidyardLoad = undefined; throw error; });
+  }
+  return vidyardLoad;
+}
+function disposeVideoPlayers() {
+  const api = window.VidyardV4?.api;
+  if (!api) return;
+  for (const video of helpVideos) {
+    for (const player of api.getPlayersByUUID(video.uuid) || []) {
+      try { api.destroyPlayer(player); } catch {}
+    }
+  }
+}
 function renderVideos({category: topic, guideId, query: videoQuery = ''} = {}) {
   const videos = findVideos({category: topic, guideId, query: videoQuery});
   if (!videos.length) return videoQuery ? '<p class="video-empty" role="status">No video guides match this search.</p>' : '';
-  return `<section class="help-videos" aria-label="Cnet video guides"><div class="video-section-heading"><h2>${guideId?'Videos for this process':'Video guides'}</h2><span>${videos.length} ${videos.length===1?'video':'videos'}</span></div><p class="section-description">Select a video to watch it here. An internet connection is required.</p><div class="video-grid">${videos.map(video=>`<details class="help-video"><summary><span class="video-play-icon" aria-hidden="true">▶</span><span>${e(video.title)}</span></summary><div class="video-content"><div class="video-player"><iframe data-src="${e(video.embedUrl)}" title="${e(video.title)}" loading="lazy" allow="fullscreen; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div><a class="video-watch-link" href="${e(video.watchUrl)}" target="_blank" rel="noopener noreferrer">Open video in a new tab ↗</a></div></details>`).join('')}</div></section>`;
+  return `<section class="help-videos" aria-label="Cnet video guides"><div class="video-section-heading"><h2>${guideId?'Videos for this process':'Video guides'}</h2><span>${videos.length} ${videos.length===1?'video':'videos'}</span></div><p class="section-description">Select a video to watch it here. An internet connection is required.</p><div class="video-grid">${videos.map(video=>`<details class="help-video" data-video-uuid="${e(video.uuid)}"><summary><span class="video-play-icon" aria-hidden="true">▶</span><span>${e(video.title)}</span></summary><div class="video-content"><div class="video-player" role="region" aria-label="${e(video.title)}"><p class="video-load">Select the heading to load this video.</p></div><a class="video-watch-link" href="${e(video.watchUrl)}" target="_blank" rel="noopener noreferrer">Open video in a new tab ↗</a></div></details>`).join('')}</div></section>`;
 }
 function videoArea() {
   if (page === 'saved') return '';
@@ -66,12 +90,13 @@ function videoArea() {
   return renderVideos({category:topic, query});
 }
 function catalogue() {
+  disposeVideoPlayers();
   const titles = {bookings:['Bookings','Video guidance for finding, updating and managing bookings.'],account:['Account','Find users, reset your password and arrange delegation.'],orders:['Orders','Create requirements, make approval decisions and arrange cover.'],candidates:['Candidates & interviews','Review talent and move interviews forward with confidence.'],timesheets:['Timesheets','Check submitted time, approve accurately and set up leave cover.'],saved:['Saved guides','Your go-to processes, ready when you need them.']};
   const head = page==='home' ? `<section class="hero hero-brand"><div class="hero-media"><video id="hero-video" poster="assets/hero-vertage.webp" ${window.matchMedia('(prefers-reduced-motion: reduce)').matches?'':'autoplay'} muted loop playsinline preload="metadata" aria-label="Vertage brand animation"><source src="assets/hero-vertage.webm" type="video/webm"><source src="assets/hero-vertage.mp4" type="video/mp4"></video><img class="hero-video-fallback" src="assets/hero-vertage.webp" alt="Vertage — Rewire how work gets done" hidden><button class="video-toggle" id="video-toggle" aria-label="Play opening video">Play video</button></div><div class="hero-content"><div class="eyebrow">Your guide to Cnet</div><h1>Workflows<br>made simple.</h1><p>From your first order to the final timesheet. Clear guidance, every step of the way.</p><a class="primary" href="#process-03a">Create an order <span aria-hidden="true">↗</span></a></div></section>` : `<div class="page-intro"><div class="eyebrow">Your manager workspace</div><h1>${titles[page][0]}</h1><p>${titles[page][1]}</p></div>`;
   main.innerHTML = `${head}<section aria-label="Guide library"><div class="search-section"><div><h2>${page==='home'?'What would you like to do?':'Find your process'}</h2><p class="section-description">Step-by-step guidance for client managers.</p></div>${searchBox()}</div>${page==='bookings'?'':chips()}<div id="collection">${collection()}</div></section><div class="tips-banner">${icon('tip')}<div><h3>A shortcut worth knowing</h3><p>Start typing in a Cnet field to find an option, or enter <strong>%%%</strong> to see the full dropdown.</p></div><a href="#support">Quick checks & support ↗</a></div><p class="small-info">Saved guides and checklist ticks stay in this browser. They do not submit or approve anything in Cnet.</p>`;
   setupHeroVideo();
   document.querySelector('#guide-search').addEventListener('input',event=>{
-    query = event.target.value; document.querySelector('#collection').innerHTML = collection();
+    query = event.target.value; disposeVideoPlayers(); document.querySelector('#collection').innerHTML = collection();
     document.querySelector('#clear-search').hidden = !query;
   });
 }
@@ -98,6 +123,7 @@ function setupHeroVideo() {
   update();
 }
 function detail(g) {
+  disposeVideoPlayers();
   const completed = progress[g.id] || [];
   main.innerHTML = `<div class="breadcrumb"><a href="#home">Overview</a><span aria-hidden="true">/</span><a href="#${g.category==='Account'||g.category==='Finding records'?'home':g.category.toLowerCase()}">${e(g.category)}</a><span aria-hidden="true">/</span><span>Process ${e(g.code)}</span></div><div class="detail-heading"><div class="eyebrow">Process ${e(g.code.toUpperCase())} · ${e(g.category)}</div><h1>${e(g.title)}</h1><p>${e(g.summary)}</p><div class="path" aria-label="Cnet navigation path">${e(g.path)}</div><div class="detail-actions"><button class="secondary ${saved.includes(g.id)?'saved':''}" data-save="${g.id}" aria-pressed="${saved.includes(g.id)}">${saved.includes(g.id)?'✓ Saved guide':'Save guide'}</button><button class="secondary" id="print-guide">Print this guide</button></div><p class="small-info">Tick each step as you work through Cnet. This checklist is stored in your browser and does not perform actions in Cnet.</p></div><div class="detail-layout"><div><section class="steps-panel" aria-label="Step-by-step process"><div class="steps-header"><div><h2>Your step-by-step guide</h2><div class="progress-text" role="status">${completed.length} of ${g.steps.length} steps checked</div></div><button class="reset-steps" data-reset="${g.id}">Reset checklist</button></div><div class="progress-track"><div class="progress-fill" style="width:${Math.round(completed.length/g.steps.length*100)}%"></div></div>${g.steps.map(s=>`<div class="step ${completed.includes(s.number)?'completed':''}"><button class="step-toggle" data-step="${s.number}" data-guide="${g.id}" aria-label="${completed.includes(s.number)?'Uncheck':'Check'} step ${s.number}: ${e(s.title)}" aria-pressed="${completed.includes(s.number)}">${completed.includes(s.number)?'✓':s.number}</button><div><h3>${e(s.title)}</h3><p>${e(s.body)}</p></div></div>`).join('')}</section><div class="outcome">${icon('check')}<div><h3>Expected outcome</h3><p>${e(g.outcome)}</p></div></div></div><aside class="detail-side" aria-label="Process notes"><div class="side-box manager-note"><div class="note-label">MANAGER CHECK</div><p>${e(g.tip)}</p></div><div class="side-box"><h3>See the reference screen</h3><button class="screenshot-button" data-image="${g.id}" aria-label="Enlarge reference screenshot for ${e(g.title)}"><img src="${g.image}" alt="Cnet reference screen for ${e(g.title)}" loading="lazy"></button><div class="screenshot-caption">Select to enlarge. Screens are examples from the supplied Cnet5 guide; layouts and available options may vary.</div></div><div class="side-box"><h3>Need a hand?</h3><p>Contact the Support team with the relevant order, candidate or timesheet reference.</p><a class="secondary" style="display:inline-block;margin-top:14px" href="mailto:stephen.molloy@comensura.co.uk">Email Support team ↗</a></div></aside></div>${g.related.length?`<section class="related"><h2>Keep moving</h2><div class="related-links">${g.related.map(id=>{const x=guides.find(g=>g.id===id);return `<a href="#${x.id}">${e(x.title)} ↗</a>`;}).join('')}</div></section>`:''}`;
   main.insertAdjacentHTML('beforeend', renderVideos({guideId:g.id}));
@@ -112,6 +138,7 @@ const checks = [
   ['If a screen or option differs','Contact the Support team. Provide the order, candidate or timesheet reference, the screen you are using and a short description of the issue.','support']
 ];
 function support() {
+  disposeVideoPlayers();
   main.innerHTML = `<div class="page-intro"><div class="eyebrow">We're here to help</div><h1>Support & access</h1><p>The right links, the right team and a few checks to keep work moving.</p></div><div class="support-grid"><section class="support-card support-primary"><div class="eyebrow">General enquiries</div><h2>Support team</h2><p>For help with Cnet, orders, candidates or timesheets, contact our Support team.</p><a class="support-email" href="mailto:Stephen.Molloy@comensura.co.uk">Stephen.Molloy@Comensura.co.uk</a><p>Include the relevant reference, the screen you are using and a short description of the issue.</p><div class="support-actions"><a class="primary" href="mailto:Stephen.molloy@comensura.co.uk?subject=Cnet%20support%20query">Email Support team ↗</a><button class="secondary" id="copy-email">Copy email address</button></div></section><section class="support-card"><div class="eyebrow">Your Cnet login</div><h2>Choose your region</h2><p>Use the Cnet link for your client programme. Sign in with your existing Cnet details.</p><a class="region-link" href="https://ie.comensura.net/CNET5/Account/SSOLogin/VeoliaIreland" target="_blank" rel="noopener noreferrer"><span><strong>Cnet Ireland</strong><small>Ireland single sign-on</small></span><span aria-hidden="true">↗</span></a><a class="region-link" href="https://uk.comensura.net/CNET5/Account/SSOLogin/Veolia" target="_blank" rel="noopener noreferrer"><span><strong>Cnet UK</strong><small>UK single sign-on</small></span><span aria-hidden="true">↗</span></a><p><a href="https://www.vertage.com/" target="_blank" rel="noopener noreferrer">Visit the Vertage website ↗</a></p></section></div><section class="quick-checks"><h2>A quick check before you act</h2><div class="check-grid">${checks.map(([title,body,img])=>`<article class="check-item">${icon(img)}<div><h3>${e(title)}</h3><p>${e(body)}</p></div></article>`).join('')}</div></section><section class="faq-list" aria-label="Common questions"><details><summary>Why can't I request an interview?</summary><p>Request Interview is available only when Review and Interview Required was selected at order creation. <a href="#process-03b">Check the order-selection guidance</a> or contact the Support team.</p></details><details><summary>How do I arrange cover while I'm away?</summary><p>Set up a delegate in My Account → Delegates, choose the correct approval role and add the cover dates. <a href="#process-05">Order Approval</a> and <a href="#process-11">Timesheet Approver</a> are separate roles.</p></details><details><summary>Can I use this as an app on my phone?</summary><p>In a supported browser, use Install app when offered. On iPhone or iPad, open this site in Safari, choose Share, then Add to Home Screen. Guides are available offline after your first complete online visit; Cnet login and sending email require a connection.</p></details></section><p class="source-note">Based on the supplied Client Manager Cnet Guide, October 2026 edition. This hub provides guidance; Cnet remains the system for submitting orders and approving timesheets. Programme settings and screen layouts may vary. No Cnet credentials or worker data are collected by this app.</p><button class="clear-progress" id="clear-local">Clear saved guides and checklist ticks</button>`;
 }
 function route({focus=true}={}) {
@@ -130,22 +157,41 @@ document.querySelector('#menu-button').addEventListener('click',()=>{document.qu
 document.querySelector('#close-menu').addEventListener('click',()=>{closeMenu();document.querySelector('#menu-button').focus();});
 document.querySelector('#mobile-shade').addEventListener('click',closeMenu);
 document.addEventListener('keydown',event=>{if(event.key==='Escape'){closeMenu();}if(event.key==='/'&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){const search=document.querySelector('#guide-search');if(search){event.preventDefault();search.focus();}}});
-main.addEventListener('toggle',event=>{
+main.addEventListener('toggle',async event=>{
   const details=event.target;
   if (!details.matches('details.help-video')) return;
-  const frame=details.querySelector('iframe');
-  if(details.open) frame.src=frame.dataset.src;
-  else frame.removeAttribute('src');
+  const uuid=details.dataset.videoUuid;
+  const container=details.querySelector('.video-player');
+  if (!details.open) {
+    for (const player of window.VidyardV4?.api.getPlayersByUUID(uuid) || []) {
+      try { player.pause(); } catch {}
+    }
+    return;
+  }
+  if (container.dataset.loaded === 'true' || container.dataset.loading === 'true') return;
+  container.dataset.loading='true';
+  container.innerHTML='<p class="video-load" role="status">Loading video…</p>';
+  try {
+    const embed=await loadVidyard();
+    if (!details.isConnected || !details.open) return;
+    container.replaceChildren();
+    embed.api.renderPlayer({uuid,container,type:'inline',aspect:'landscape',disable_analytics:1});
+    container.dataset.loaded='true';
+  } catch {
+    container.innerHTML='<p class="video-load" role="status">Unable to load the player. Please use the video link below.</p>';
+  } finally {
+    delete container.dataset.loading;
+  }
 },true);
 main.addEventListener('click',async event=>{
   const btn = event.target.closest('button'); if(!btn)return;
   if(btn.dataset.save){
     const id=btn.dataset.save;const was=saved.includes(id);saved=was?saved.filter(x=>x!==id):[...saved,id];persist('vertage-saved',saved);
     if(guides.some(g=>g.id===page)){btn.classList.toggle('saved',!was);btn.setAttribute('aria-pressed',String(!was));btn.textContent=was?'Save guide':'✓ Saved guide';}
-    else { document.querySelector('#collection').innerHTML=collection(); const replacement=main.querySelector(`[data-save="${id}"]`); replacement?.focus(); }
+    else { disposeVideoPlayers(); document.querySelector('#collection').innerHTML=collection(); const replacement=main.querySelector(`[data-save="${id}"]`); replacement?.focus(); }
     toast(was?'Guide removed from saved':'Guide saved');
   }
-  if(btn.dataset.category){category=btn.dataset.category;document.querySelector('.chips').outerHTML=chips();document.querySelector('#collection').innerHTML=collection();main.querySelector(`[data-category="${category}"]`)?.focus();}
+  if(btn.dataset.category){disposeVideoPlayers();category=btn.dataset.category;document.querySelector('.chips').outerHTML=chips();document.querySelector('#collection').innerHTML=collection();main.querySelector(`[data-category="${category}"]`)?.focus();}
   if(btn.id==='reset-filter'){if(page==='saved'&&!query){location.hash='home';}else{query='';category='All';catalogue();document.querySelector('#guide-search').focus();}}
   if(btn.id==='clear-search'){query='';catalogue();document.querySelector('#guide-search').focus();}
   if(btn.dataset.step){
