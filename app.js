@@ -57,11 +57,24 @@ function loadVidyard() {
   if (window.VidyardV4?.api) return Promise.resolve(window.VidyardV4);
   if (!vidyardLoad) {
     vidyardLoad = new Promise((resolve, reject) => {
+      let settled = false;
+      const timer = setTimeout(() => finish(new Error('Video player timed out')), 15000);
+      const finish = (error, embed) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (error) reject(error); else resolve(embed);
+      };
+      const previous = window.onVidyardAPI;
+      window.onVidyardAPI = embed => {
+        finish(null, embed);
+        if (typeof previous === 'function') previous(embed);
+      };
       const script = document.createElement('script');
-      script.src = 'https://play.vidyard.com/embed/v4.js';
+      script.src = 'https://play.vidyard.com/embed/v4.umd.js';
       script.async = true;
-      script.onload = () => window.VidyardV4?.api ? resolve(window.VidyardV4) : reject(new Error('Video player unavailable'));
-      script.onerror = () => reject(new Error('Video player could not be loaded'));
+      script.onload = () => { if (window.VidyardV4?.api) finish(null, window.VidyardV4); };
+      script.onerror = () => finish(new Error('Video player could not be loaded'));
       document.head.append(script);
     }).catch(error => { vidyardLoad = undefined; throw error; });
   }
@@ -177,7 +190,8 @@ main.addEventListener('toggle',async event=>{
     container.replaceChildren();
     embed.api.renderPlayer({uuid,container,type:'inline',aspect:'landscape',disable_analytics:1});
     container.dataset.loaded='true';
-  } catch {
+  } catch (error) {
+    console.error('Cnet video player:', error.message);
     container.innerHTML='<p class="video-load" role="status">Unable to load the player. Please use the video link below.</p>';
   } finally {
     delete container.dataset.loading;
