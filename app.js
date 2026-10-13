@@ -28,6 +28,9 @@ let page = 'home';
 let deferredInstall;
 let toastTimer;
 let vidyardLoad;
+document.addEventListener('securitypolicyviolation',event=>{
+  if(event.blockedURI.includes('vidyard')) console.error('Vidyard resource blocked:',event.violatedDirective,new URL(event.blockedURI).origin);
+});
 
 function toast(message) {
   const node = document.querySelector('#toast'); node.textContent = message; node.classList.add('visible');
@@ -187,8 +190,16 @@ main.addEventListener('toggle',async event=>{
   try {
     const embed=await loadVidyard();
     if (!details.isConnected || !details.open) return;
-    container.replaceChildren();
-    embed.api.renderPlayer({uuid,container,type:'inline',aspect:'landscape',disable_analytics:1});
+    const poster=document.createElement('img');
+    poster.src='assets/process-02.webp';
+    poster.alt='Cnet video guide';
+    poster.className='vidyard-player-embed';
+    poster.setAttribute('data-uuid',uuid);
+    poster.setAttribute('data-v','4');
+    poster.setAttribute('data-type','inline');
+    poster.setAttribute('data-disable_analytics','1');
+    container.replaceChildren(poster);
+    embed.api.renderPlayer(poster);
     container.dataset.loaded='true';
   } catch (error) {
     console.error('Cnet video player:', error.message);
