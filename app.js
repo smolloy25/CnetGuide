@@ -71,7 +71,7 @@ function loadVidyard() {
         if (typeof previous === 'function') previous(embed);
       };
       const script = document.createElement('script');
-      script.src = 'https://play.vidyard.com/embed/v4.umd.js';
+      script.src = 'assets/vidyard-embed.js';
       script.async = true;
       script.onload = () => { if (window.VidyardV4?.api) finish(null, window.VidyardV4); };
       script.onerror = () => finish(new Error('Video player could not be loaded'));
